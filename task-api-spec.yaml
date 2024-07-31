@@ -1,0 +1,193 @@
+openapi: 3.0.0
+info:
+  title: Technical Writer Tasks API
+  description: API for managing technical writer tasks.
+  version: 1.0.
+
+servers:
+  - url: https://api.techwriter.xyz
+
+components:
+  securitySchemes:
+    ApiKeyAuth:
+      type: apiKey
+      in: header
+      name: X-API-KEY
+
+  schemas:
+    Task:
+      type: object
+      properties:
+        task_id:
+          type: string
+        title:
+          type: string
+        description:
+          type: string
+        status:
+          $ref: "#/components/schemas/StatusEnum"
+        component:
+          $ref: "#/components/schemas/ComponentEnum"
+        connected_tasks:
+          type: array
+          items:
+            $ref: "#/components/schemas/ConnectedTask"
+
+    TaskInput:
+      type: object
+      properties:
+        title:
+          type: string
+        description:
+          type: string
+        status:
+          $ref: "#/components/schemas/StatusEnum"
+        component:
+          $ref: "#/components/schemas/ComponentEnum"
+        connected_tasks:
+          type: array
+          items:
+            $ref: "#/components/schemas/ConnectedTask"
+      required:
+        - title
+        - status
+        - component
+
+    ConnectedTask:
+      type: object
+      properties:
+        task_id:
+          type: string
+        title:
+          type: string
+        description:
+          type: string
+        status:
+          $ref: "#/components/schemas/StatusEnum"
+
+    StatusEnum:
+      type: string
+      enum: [OPEN, IN_PROGRESS, COMPLETED]
+
+    ComponentEnum:
+      type: string
+      enum: [API_DOCS, HELP_CENTER, SDK_DOCS, OAS_FILE]
+
+    ErrorResponse:
+      type: object
+      properties:
+        error:
+          type: string
+        message:
+          type: string
+      required:
+        - error
+        - message
+
+  responses:
+    Error400Response:
+      description: Bad request, invalid task details.
+      content:
+        application/json:
+          schema:
+            $ref: "#/components/schemas/ErrorResponse"
+          examples:
+            badRequest:
+              summary: "Bad Request Error"
+              value:
+                error: "Bad Request"
+                message: "Invalid request payload."
+
+    Error401Response:
+      description: Unauthorized, API key missing or invalid.
+      content:
+        application/json:
+          schema:
+            $ref: "#/components/schemas/ErrorResponse"
+          examples:
+            unauthorized:
+              summary: "Unauthorized Error"
+              value:
+                error: "Unauthorized"
+                message: "API key missing or invalid."
+
+    Error500Response:
+      description: Internal Server Error
+      content:
+        application/json:
+          schema:
+            $ref: "#/components/schemas/ErrorResponse"
+          examples:
+            internalServerError:
+              summary: "Internal Server Error"
+              value:
+                error: "Internal Server Error"
+                message: "An unexpected error occurred."
+security:
+  - ApiKeyAuth: []
+
+paths:
+  /tasks:
+    get:
+      summary: Retrieve all technical writer tasks.
+      operationId: getTasks
+      parameters:
+        - name: status
+          in: query
+          description: Filter tasks by status.
+          required: false
+          schema:
+            $ref: "#/components/schemas/StatusEnum"
+        - name: component
+          in: query
+          description: Filter tasks by component.
+          required: false
+          schema:
+            $ref: "#/components/schemas/ComponentEnum"
+        - name: updatedAfter
+          in: query
+          description: Filter tasks that have been updated after a specific date (YYYY-MM-DD).
+          required: false
+          schema:
+            type: string
+            format: date
+      responses:
+        "200":
+          description: An array of tasks.
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/Task"
+        "400":
+          $ref: "#/components/responses/Error400Response"
+        "401":
+          $ref: "#/components/responses/Error401Response"
+        "500":
+          $ref: "#/components/responses/Error500Response"
+
+  /task:
+    post:
+      summary: Add a new technical writer task.
+      operationId: addTask
+      requestBody:
+        description: Task details to be created
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/TaskInput"
+      responses:
+        "201":
+          description: Task successfully added.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Task"
+        "400":
+          $ref: "#/components/responses/Error400Response"
+        "401":
+          $ref: "#/components/responses/Error401Response"
+        "500":
+          $ref: "#/components/responses/Error500Response"
